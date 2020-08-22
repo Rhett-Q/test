@@ -8,40 +8,75 @@
       <el-button type="info" @click="logout">退出</el-button>
     </el-header>
     <el-container>
-      <el-aside width="200px">
+      <el-aside :width="isCollapse ? '64px' :'200px'">
+        <div class="toggle-button" @click="toggleCollapse">|||</div>
         <el-menu
-          default-active="2"
-          class="el-menu-vertical-demo"
-          @open="handleOpen"
-          @close="handleClose"
           background-color="gray"
           text-color="#fff"
-          active-text-color="#ffd04b"
+          active-text-color="black"
+          unique-opened
+          :collapse="isCollapse"
+          :collapse-transition="false"
+          router
+          :default-active="activePath"
         >
-          <el-submenu index="1">
+          <el-submenu :index="'/' + item.path" v-for="item in menuList" :key="item.id">
             <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>导航一</span>
+              <i :class="iconsObj[item.id]"></i>
+              <span>{{item.authName}}</span>
             </template>
-            <el-menu-item>
+            <el-menu-item :index="'/' + subItem.path" v-for="subItem in item.children" :key="subItem.id" @click="saveNavState('/' + subItem.path)">
               <template slot="title">
-                <i class="el-icon-location"></i>
-                <span>二级菜单</span>
+                <i class="el-icon-menu"></i>
+                <span>{{subItem.authName}}</span>
               </template>
             </el-menu-item>
           </el-submenu>
         </el-menu>
       </el-aside>
-      <el-main>Main</el-main>
+      <el-main>
+        <router-view></router-view>
+      </el-main>
     </el-container>
   </el-container>
 </template>
 <script>
 export default {
+  data() {
+    return {
+      menuList: [],
+      iconsObj: {
+        125: 'iconfont icon-user',
+        103: 'iconfont icon-tijikongjian',
+        101: 'iconfont icon-shangpin',
+        102: 'iconfont icon-danju',
+        145: 'iconfont icon-baobiao'
+      },
+      isCollapse: false,
+      activePath: ''
+    }
+  },
+  created() {
+    this.getMenuList()
+    this.activePath = window.sessionStorage.getItem('activePath')
+  },
   methods: {
     logout() {
       window.sessionStorage.clear()
       this.$router.push('/login')
+    },
+    async getMenuList() {
+      const { data: res } = await this.$http.get('menus')
+      console.log(res)
+      if (res.meta.status !== 200) return this.$message.error(res.meta.msg)
+      this.menuList = res.data
+    },
+    toggleCollapse() {
+      this.isCollapse = !this.isCollapse
+    },
+    saveNavState(activePath) {
+      window.sessionStorage.setItem('activePath', activePath)
+      this.activePath = activePath
     }
   }
 }
@@ -68,8 +103,22 @@ export default {
 }
 .el-aside {
   background-color: gray;
+  .el-menu {
+    border-right: none;
+  }
 }
 .el-main {
   background-color: #eee;
+}
+.iconfont {
+  margin-right: 10px;
+}
+.toggle-button {
+  background-color: #aaa;
+  text-align: center;
+  font-size: 10px;
+  line-height: 24px;
+  letter-spacing: 0.2;
+  cursor: pointer;
 }
 </style>
